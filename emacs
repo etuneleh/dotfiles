@@ -765,3 +765,7 @@
 (use-package rainbow-delimiters
   :ensure t
   :init (rainbow-delimiters-mode t))
+
+;; html
+(use-package web-mode
+  :ensure t)
