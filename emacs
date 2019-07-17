@@ -266,7 +266,7 @@
   (sml/setup)
   (set-face-background 'mode-line-inactive "light")) 
 (tool-bar-mode -1)
-(menu-bar-mode -1)
+(menu-bar-mode 1)
 (menu-bar-no-scroll-bar)
 
 ;; eshell
