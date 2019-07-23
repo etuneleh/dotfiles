@@ -769,3 +769,5 @@
 ;; html
 (use-package web-mode
   :ensure t)
+
+(require 'washing-machine-timer "~/Dropbox/Helen+Dario/washing-machine-timer.el")
