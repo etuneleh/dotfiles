@@ -13,7 +13,7 @@
  '(org-agenda-files (quote ("~/Documents/TODO.org")))
  '(package-selected-packages
    (quote
-    (web-mode wgrep guix pdf-tools magit yasnippet company ivy mu4e-alert evil-mu4e smooth-scrolling doom-themes ggtags zenburn-theme which-key use-package smart-mode-line-atom-one-dark-theme sly ranger rainbow-delimiters ox-reveal org-ref org-re-reveal org-plus-contrib org-bullets omnisharp general geiser exwm evil-surround evil-snipe evil-org evil-magit evil-commentary evil-collection eval-sexp-fu eshell-prompt-extras counsel company-reftex auctex ace-link)))
+    (yasnippet-snippets web-mode wgrep guix pdf-tools magit yasnippet company ivy mu4e-alert evil-mu4e smooth-scrolling doom-themes ggtags zenburn-theme which-key use-package smart-mode-line-atom-one-dark-theme sly ranger rainbow-delimiters ox-reveal org-ref org-re-reveal org-plus-contrib org-bullets omnisharp general geiser exwm evil-surround evil-snipe evil-org evil-magit evil-commentary evil-collection eval-sexp-fu eshell-prompt-extras counsel company-reftex auctex ace-link)))
  '(scroll-bar-mode nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -339,49 +339,50 @@
 
 (use-package ediff :ensure t)
 
-  (use-package pdf-tools
-    :ensure t
-    :init
-    (pdf-tools-install)
-    :magic ("%PDF" . pdf-view-mode)
-    :config
-    (add-hook 'pdf-view-mode-hook 'pdf-view-midnight-minor-mode)
-    (setq pdf-view-continuous nil)
-    (evil-collection-init 'pdf)
-    (setq pdf-view-midnight-colors '("WhiteSmoke" . "gray16"))
-    :general
-    (general-define-key
-     :states '(motion normal)
+(when (system-name= "helensInfinityBook")
+ (use-package pdf-tools
+   :ensure t
+   :init
+   (pdf-tools-install)
+   :magic ("%PDF" . pdf-view-mode)
+   :config
+   (add-hook 'pdf-view-mode-hook 'pdf-view-midnight-minor-mode)
+   (setq pdf-view-continuous nil)
+   (evil-collection-init 'pdf)
+   (setq pdf-view-midnight-colors '("WhiteSmoke" . "gray16"))
+   :general
+   (general-define-key
+    :states '(motion normal)
+    :keymaps 'pdf-view-mode-map
+    ;; evil-style bindings
+    ;; "SPC"  nil ;TODO where to put this globally?
+    "-"  nil ;TODO where to put this globally?
+    "j"  '(pdf-view-scroll-up-or-next-page :which-key "scroll down")
+    "k"  '(pdf-view-scroll-down-or-previous-page :which-key "scroll up")
+    ;; "j"  '(pdf-view-next-line-or-next-page :which-key "scroll down")
+    ;; "k"  '(pdf-view-previous-line-or-previous-page :which-key "scroll up")
+    "L"  '(image-forward-hscroll :which-key "scroll right")
+    "H"  '(image-backward-hscroll :which-key "scroll left")
+    "l"  '(pdf-view-next-page :which-key "page down")
+    "h"  '(pdf-view-previous-page :which-key "page up")
+    "u"  '(pdf-view-scroll-down-or-previous-page :which-key "scroll down")
+    "d"  '(pdf-view-scroll-up-or-next-page :which-key "scroll up")
+    "/"  '(isearch-forward :which-key search forward)
+    "?"  '(isearch-backward :which-key search backward)
+    "0"  '(image-bol :which-key "go left")
+    "$"  '(image-eol :which-key "go right"))
+   (my-local-leader-def
+     ;; :states 'normal
      :keymaps 'pdf-view-mode-map
-     ;; evil-style bindings
-     ;; "SPC"  nil ;TODO where to put this globally?
-     "-"  nil ;TODO where to put this globally?
-     "j"  '(pdf-view-scroll-up-or-next-page :which-key "scroll down")
-     "k"  '(pdf-view-scroll-down-or-previous-page :which-key "scroll up")
-     ;; "j"  '(pdf-view-next-line-or-next-page :which-key "scroll down")
-     ;; "k"  '(pdf-view-previous-line-or-previous-page :which-key "scroll up")
-     "L"  '(image-forward-hscroll :which-key "scroll right")
-     "H"  '(image-backward-hscroll :which-key "scroll left")
-     "l"  '(pdf-view-next-page :which-key "page down")
-     "h"  '(pdf-view-previous-page :which-key "page up")
-     "u"  '(pdf-view-scroll-down-or-previous-page :which-key "scroll down")
-     "d"  '(pdf-view-scroll-up-or-next-page :which-key "scroll up")
-     "/"  '(isearch-forward :which-key search forward)
-     "?"  '(isearch-backward :which-key search backward)
-     "0"  '(image-bol :which-key "go left")
-     "$"  '(image-eol :which-key "go right"))
-    (my-local-leader-def
-      ;; :states 'normal
-      :keymaps 'pdf-view-mode-map
-      ;; Scale/Fit
-      ;; "f"  nil
-      "fw"  '(pdf-view-fit-width-to-window :which-key "fit width")
-      "fh"  '(pdf-view-fit-height-to-window :which-key "fit heigth")
-      "fp"  '(pdf-view-fit-page-to-window :which-key "fit page")
-      "m"  '(pdf-view-set-slice-using-mouse :which-key "slice using mouse")
-      "b"  '(pdf-view-set-slice-from-bounding-box :which-key "slice from bounding box")
-      "R"  '(pdf-view-reset-slice :which-key "reset slice")
-      "zr" '(pdf-view-scale-reset :which-key "zoom reset")))
+     ;; Scale/Fit
+     ;; "f"  nil
+     "fw"  '(pdf-view-fit-width-to-window :which-key "fit width")
+     "fh"  '(pdf-view-fit-height-to-window :which-key "fit heigth")
+     "fp"  '(pdf-view-fit-page-to-window :which-key "fit page")
+     "m"  '(pdf-view-set-slice-using-mouse :which-key "slice using mouse")
+     "b"  '(pdf-view-set-slice-from-bounding-box :which-key "slice from bounding box")
+     "R"  '(pdf-view-reset-slice :which-key "reset slice")
+     "zr" '(pdf-view-scale-reset :which-key "zoom reset"))))
 
 ;;exwm
   ;; (use-package exwm 
@@ -635,25 +636,6 @@
 
 (use-package wgrep
   :ensure t)
-
-;;c#
-(use-package omnisharp
-  ;; :after company
-  :ensure t
-  ;; :hook
-  ;; (csharp-mode-hook omnisharp-mode)
-  ;; (csharp-mode-hook company-mode)
-  :config
-  (add-to-list 'company-backends 'company-omnisharp)
-  :general
-  (general-define-key
-   :states 'normal
-   :keymaps 'csharp-mode-map ; TODO figure out why this does not work with omnisharp-mode-map
-   "gd" '(omnisharp-go-to-definition :which-key "go to definition"))
-  (my-local-leader-def
-    :keymaps 'csharp-mode-map ; TODO figure out why this does not work with omnisharp-mode-map
-    "b" '((lambda () (interactive) (compile "msbuild")) :which-key "build")))
-
 
 ;;latex (auctex)
 (use-package tex
