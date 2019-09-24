@@ -726,47 +726,8 @@ It only works for frames with exactly two windows.
   :ensure t
   :init (rainbow-delimiters-mode t))
 
-(use-package dmenu
+;; html
+(use-package web-mode
   :ensure t)
 
-(use-package google-translate
-  :ensure t)
-
-(use-package excorporate
-  :ensure t
-  :config
-  (general-define-key
-   :keymaps 'calendar-mode-map
-   :states 'normal
-   "e" '((lambda ()
-	   (interactive)
-	    (exco-calendar-show-day)
-	    (switch-to-buffer "diary-excorporate-transient"))
-	 :which-key "excorporate show day"))
-  (setq excorporate-configuration (cons "klingenberg@fdy.tu-darmstadt.de" "https://mail.tu-darmstadt.de/ews/exchange.asmx")))
-
-(use-package emms
-  :ensure t)
-
-(use-package sx
-  :ensure t
-  :config
-  (general-define-key
-   :keymaps 'sx-question-list-mode-map
-   :states 'normal
-   "RET" 'sx-display))
-
-(use-package md4rd
-  :ensure t
-  :config
-  (mapc
-   (lambda (elem) (add-to-list 'md4rd-subs-active elem))
-   '(linux
-     baduk)))
-
-(use-package podcaster
-  :ensure t
-  :config
-  (add-to-list 'podcaster-feeds-urls "https://www.zeitsprung.fm/podcasts/zs49"))
-
-(show-paren-mode 1)
+(require 'washing-machine-timer "~/Dropbox/Helen+Dario/washing-machine-timer.el")
