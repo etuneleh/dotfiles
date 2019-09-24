@@ -10,10 +10,11 @@
  '(evil-snipe-mode t)
  '(evil-snipe-override-mode t)
  '(global-evil-surround-mode 1)
+ '(gud-tooltip-mode t)
  '(org-agenda-files (quote ("~/Documents/TODO.org")))
  '(package-selected-packages
    (quote
-    (yasnippet-snippets web-mode wgrep guix pdf-tools magit yasnippet company ivy mu4e-alert evil-mu4e smooth-scrolling doom-themes ggtags zenburn-theme which-key use-package smart-mode-line-atom-one-dark-theme sly ranger rainbow-delimiters ox-reveal org-ref org-re-reveal org-plus-contrib org-bullets omnisharp general geiser exwm evil-surround evil-snipe evil-org evil-magit evil-commentary evil-collection eval-sexp-fu eshell-prompt-extras counsel company-reftex auctex ace-link)))
+    (jenkins butler pulseaudio-control pinentry bosss emacs-bosss projectile-ripgrep dmenu projectile helm-firefox helm-company helm-unicode helm-tramp helm-ext helm-dictionary helm-eww helm-mu helm-exwm podcaster lispy helm-system-packages mu4e-conversation excorporate md4rd sx emms yasnippet-snippets google-translate fsharp-mode wgrep guix pdf-tools magit yasnippet company ivy mu4e-alert evil-mu4e smooth-scrolling doom-themes ggtags zenburn-theme which-key use-package smart-mode-line-atom-one-dark-theme sly ranger rainbow-delimiters ox-reveal org-ref org-re-reveal org-plus-contrib org-bullets omnisharp general geiser exwm evil-surround evil-snipe evil-org evil-magit evil-commentary evil-collection eval-sexp-fu eshell-prompt-extras counsel company-reftex auctex ace-link)))
  '(scroll-bar-mode nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -46,7 +47,7 @@
 (setq backup-directory-alist `(("." . "~/.emacs.d/backups"))) ; which directory to put backups file
 (setq vc-follow-symlinks t)				       ; don't ask for confirmation when opening symlinked file
 (setq auto-save-file-name-transforms '((".*" "~/.emacs.d/auto-save-list/" t))) ;transform backups file name
-(setq inhibit-startup-screen nil)	; inhibit startup screen
+(setq inhibit-startup-screen t)	; inhibit startup screen
 (setq ring-bell-function 'ignore)	; silent bell when you make a mistake
 (set-language-environment "UTF-8")
 (setq sentence-end-double-space nil)	; sentence SHOULD end with only a point.
@@ -58,16 +59,23 @@
 	     '(font . "Source Code Pro"))
 (add-hook 'focus-out-hook (lambda () (when buffer-file-name (save-buffer))))
 (recentf-mode 1)
-(show-paren-mode 1)
+(setq delete-by-moving-to-trash t)
+(setq-default indent-tabs-mode nil)
 
 (setq
  initial-scratch-message
- "Welcome"); print a default message in the empty scratch buffer opened at startup
+ "Welcome!") ; print a default message in the empty scratch buffer opened at startup
 
 (defalias 'yes-or-no-p 'y-or-n-p) ;reduce typing effort
 (electric-pair-mode 1) ;close brackets
 
 ;; useful functions
+(defun system-name= (&rest names)
+  (cl-some
+    (lambda (name)
+      (string-equal name (system-name)))
+    names))
+
 (defun find-config-file ()
   "open emacs configuration file"
   (interactive)
@@ -83,23 +91,34 @@
   (interactive)
   (find-file "~/.dotfiles/dotfiles/"))
 
-(defun find-todo ()
-  "open dotfile directory"
+(defun ambrevar/toggle-window-split ()
+  "Switch between vertical and horizontal split.
+It only works for frames with exactly two windows.
+(Credits go to ambrevar and his awesome blog)"
   (interactive)
-  (find-file "~/Documents/TODO.org"))
+  (if (= (count-windows) 2)
+      (let* ((this-win-buffer (window-buffer))
+	     (next-win-buffer (window-buffer (next-window)))
+	     (this-win-edges (window-edges (selected-window)))
+	     (next-win-edges (window-edges (next-window)))
+	     (this-win-2nd (not (and (<= (car this-win-edges)
+					 (car next-win-edges))
+				     (<= (cadr this-win-edges)
+					 (cadr next-win-edges)))))
+	     (splitter
+	      (if (= (car this-win-edges)
+		     (car (window-edges (next-window))))
+		  'split-window-horizontally
+		'split-window-vertically)))
+	(delete-other-windows)
+	(let ((first-win (selected-window)))
+	  (funcall splitter)
+	  (if this-win-2nd (other-window 1))
+	  (set-window-buffer (selected-window) this-win-buffer)
+	  (set-window-buffer (next-window) next-win-buffer )
+	  (select-window first-win)
+	  (if this-win-2nd (other-window 1))))))
 
-(defun system-name= (name)
-  (string-equal name (system-name)))
-
-;; (defun write-to-string (input)
-;;   (cond
-;;    ((null input) nil)
-;;    ((listp input) (concat (write-to-string (car input)) (write-to-string (cdr input))))
-;;    ((not (null input)) (format "%s" input))))
-
-;; (defmacro ! (&rest args)
-;;   "convenient way to execute shell commands from scratch buffer"
-;;   `(shell-command (mapcar #'write-to-string ,args)))
 
 ;; packages with configuration
 (use-package general :ensure t
@@ -139,30 +158,34 @@
 
   ;; many spacemacs bindings go here
   (my-leader-def
-    "SPC" '(counsel-M-x :which-key "M-x")
+    "SPC" '(helm-M-x :which-key "M-x")
     "a" '(:ignore t :which-key "applications")
-    "ar" '(ranger :which-key "call ranger")
     "ad" '(deer :which-key "call deer")
-    "ab" '(eww :which-key "open browser")
+    "ab" '(helm-eww :which-key "open browser")
     "am" '(mu4e :which-key "open mail")
+    "ap" '(helm-system-packages :which-key "package management")
+    "ao" '(sx-search :which-key "search stackoverflow")
+    "ar" '(md4rd :which-key "reddit")
     "at" '(ansi-term :which-key "open ansi-term")
-    "as" '(eshell :which-key "open existing eshell")
-    "aS" '((lambda () (interactive) (eshell 'N)) :which-key "open new eshell")
+    "aS" '(eshell :which-key "open existing eshell")
+    "as" '((lambda () (interactive) (eshell 'N)) :which-key "open new eshell")
     "g"  '(:ignore t :which-key "git")
+    "/"  '(helm-occur t :which-key "helm-occur")
     "cc" '(org-capture :which-key "org capture")
     "f" '(:ignore t :which-key "file")
     "fs" '(save-buffer :which-key "save file")
     "fS" '(write-file :which-key "save file as")
-    "ff" '(counsel-find-file :which-key "find file")
+    "ff" '(helm-find-files :which-key "find file")
     "fed" '(find-config-file :which-key "find config file")
     "fer" '(load-config-file :which-key "load config file")
     "feD" '(find-dotfile-dir :which-key "find dotfile directory")
     "ft"  '(find-todo :which-key "find todo file")
     "fz"  '((lambda () (interactive) (switch-to-buffer "*scratch*")) :which-key "find scratch buffer")
-    "fp" '(counsel-locate :which-key "counsel-locate")
-    "fg" '(counsel-ag :which-key "counsel-ag")
+    "fp" '(helm-locate :which-key "helm-locate")
+    "fg" '(helm-do-grep-ag :which-key "helm-ag")
     "b" '(:ignore t :which-key "buffer")
-    "bb" '(counsel-switch-buffer :which-key "switch buffer")
+    "bb" '(helm-mini :which-key "switch buffer")
+    "be" '(helm-exwm :which-key "switch to exwm buffer")
     "bd" '(kill-this-buffer :which-key "kill buffer")
     "w"  '(:ignore t :which-key "window management")
     "w TAB"  '(lambda () (interactive) (ivy--switch-buffer-action (buffer-name (other-buffer (current-buffer)))))
@@ -189,13 +212,18 @@
     "ww"  'other-window
     "w="  'balance-windows
     "r"   '(:ignore t :which-key "recent-files")
-    "rr"  'counsel-recentf
-    ;; "w+"  'spacemacs/window-layout-toggle
+    "rr"  'helm-recentf
+    "w+"  '(ambrevar/toggle-window-split :which-key "toggle window split")
     "e"  '(:ignore t :which-key "eval elisp")
     "ee"  'eval-last-sexp
     "ef"  'eval-defun
-    "ss"  (lambda () (interactive) (shell-command "shutdown now"))
-    "sr"  (lambda () (interactive) (shell-command "reboot"))
+    "ep"  'eval-print-last-sexp
+    "i"   '(:ignore :which-key "internet")
+    "id"  '((lambda () (interactive) (my-open-url "https://www.dazn.com")) :which-key "dazn")
+    "ig"  '((lambda () (interactive) (my-open-url "https://www.dragongoserver.net/status.php")) :which-key "dgs")
+    "iy"  '((lambda () (interactive) (my-open-url "https://www.youtube.com/")) :which-key "youtube")
+    "ss"  'shutdown
+    "sr"  'reboot
     "sl"  (lambda () (interactive) (shell-command "/usr/bin/slock"))))
 
 (use-package evil
@@ -206,9 +234,12 @@
   :config (evil-mode 1))
 
 (use-package evil-collection
-  :after evil
+  :after (evil helm) 
   :ensure t
-  :config (evil-collection-init))
+  :init
+  (setq evil-collection-setup-minibuffer t)
+  :config
+  (evil-collection-init))
 
 (use-package evil-surround
   :ensure t
@@ -244,7 +275,10 @@
   :ensure t
   :config
   (load-theme 'doom-vibrant t))
-(use-package smart-mode-line-atom-one-dark-theme :ensure t)
+
+(use-package smart-mode-line-atom-one-dark-theme
+  :ensure t)
+
 ;; (use-package doom-modeline
 ;;   :ensure t
 ;;   :hook (after-init . doom-modeline-mode)
@@ -262,14 +296,41 @@
   :ensure t
   :config
   (setq sml/theme 'atom-one-dark)
+  (setq mode-line-format
+	'("%e"
+	  (:eval (propertize
+		  (format (concat "<%s> "
+				  (unless (null (my-exwm-get-other-workspace)) "[%s] "))
+			  exwm-workspace-current-index
+			  (my-exwm-get-other-workspace))
+		  'face 'sml/numbers-separator))
+	  ;; (:eval (if (exwm-workspace--active-p exwm-workspace--current)
+	  ;; 	     (format "%s " exwm-workspace-current-index)
+	  ;; 	     (format "%s " (my-exwm-get-other-workspace)))) ;; TODO this is always true, determine the correct variable
+	  sml/pos-id-separator
+	  mode-line-mule-info
+	  mode-line-client
+	  mode-line-modified
+	  mode-line-remote
+	  mode-line-frame-identification
+	  mode-line-buffer-identification
+	  sml/pos-id-separator
+	  mode-line-front-space
+	  mode-line-position
+	  evil-mode-line-tag
+	  (vc-mode vc-mode)
+	  sml/pre-modes-separator
+	  mode-line-modes
+	  mode-line-misc-info
+	  mode-line-end-spaces))
   (sml/setup)
   (set-face-background 'mode-line-inactive "light")) 
 (tool-bar-mode -1)
-(menu-bar-mode 1)
+(menu-bar-mode -1)
 (menu-bar-no-scroll-bar)
 
 ;; eshell
-;; (setq pcomplete-ignore-case t)
+(setq eshell-cmpl-ignore-case t)
 
 (use-package eshell-prompt-extras
   :ensure t
@@ -280,20 +341,61 @@
 (use-package ranger :ensure t
   :commands (ranger)
   :config
+  (general-define-key
+   :keymaps 'ranger-normal-mode-map
+   "cp" '(my-dired-convert-to-pdf :which-key "convert to pdf")
+   "gr" '(ranger-refresh :which-key "refresh"))
   (setq ranger-cleanup-eagerly t)
-  (setq ranger-cleanup-on-disable t)
   (ranger-override-dired-mode t))
 
-(use-package ivy :ensure t
-  :diminish (ivy-mode . "") ; does not display ivy in the modeline
-  :init (ivy-mode 1)        ; enable ivy globally at startup
+(use-package helm
+  :after helm-exwm
+  :ensure t
   :config
-  (setq ivy-use-virtual-buffers t)   ; extend searching to bookmarks and …
-  (setq ivy-height 20)               ; set height of the ivy window
-  (setq ivy-count-format "(%d/%d) ") ; count format, from the ivy help page
-  )
+  (general-define-key
+   :keymaps 'helm-find-files-map
+   "M-H" 'left-char
+   "M-L" 'right-char
+   "M-y" 'helm-ff-run-copy-file
+   "M-r" 'helm-ff-run-rename-file
+   "M-s" 'helm-ff-run-find-file-as-root
+   "M-o" 'helm-ff-run-switch-other-frame
+   "M-O" 'helm-ff-run-switch-other-window)
+  (general-define-key
+   :keymaps 'helm-buffer-map
+   "M-d" 'helm-buffer-run-kill-persistent)
+  (setq helm-mode-fuzzy-match t)
+  (setq helm-completion-in-region-fuzzy-match t)
+  (setq helm-M-x-fuzzy-match t)
+  (setq helm-buffers-fuzzy-matching           t)
+  (setq helm-completion-in-region-fuzzy-match t)
+  (setq helm-file-cache-fuzzy-match           t)
+  (setq helm-imenu-fuzzy-match                t)
+  (setq helm-mode-fuzzy-match                 t)
+  (setq helm-locate-fuzzy-match               t) 
+  (setq helm-quick-update                     t)
+  (setq helm-recentf-fuzzy-match              t)
+  (setq helm-exwm-emacs-buffers-source (helm-exwm-build-emacs-buffers-source))
+  (setq helm-exwm-source (helm-exwm-build-source))
+  (setq helm-mini-default-sources `(helm-exwm-emacs-buffers-source
+                                    helm-exwm-source
+                                    helm-source-recentf))
+  (helm-mode 1))
 
-(use-package counsel :ensure t)
+(use-package helm-system-packages
+  :ensure t)
+
+(use-package helm-eww
+  :ensure t)
+
+(use-package helm-dictionary
+  :ensure t)
+
+(use-package helm-tramp
+  :ensure t)
+
+(use-package helm-unicode
+  :ensure t)
 
 (use-package company
   :ensure t
@@ -301,13 +403,6 @@
   (setq company-dabbrev-downcase nil)
   (setq read-file-name-completion-ignore-case t)
   (global-company-mode 1))
-
-
-;; abbrev mode
-(setq abbrev-file-name             ;; tell emacs where to read abbrev
-      "~/.abbrev.el")    ;; definitions from...
-(setq save-abbrevs 'silently)
-(setq-default abbrev-mode t)
 
 (use-package yasnippet
   :ensure t
@@ -329,6 +424,17 @@
 (use-package yasnippet-snippets
   :ensure t)
 
+(use-package projectile
+  :ensure t
+  :config
+  (my-leader-def
+    :states 'normal
+    "p" 'projectile-command-map)
+  (projectile-mode 1))
+
+(use-package projectile-ripgrep
+  :ensure t)
+
 (use-package magit
   :ensure t
   :general (my-leader-def
@@ -338,211 +444,84 @@
 
 (use-package ediff :ensure t)
 
-(when (system-name= "helensInfinityBook")
- (use-package pdf-tools
-   :ensure t
-   :init
-   (pdf-tools-install)
-   :magic ("%PDF" . pdf-view-mode)
-   :config
-   (add-hook 'pdf-view-mode-hook 'pdf-view-midnight-minor-mode)
-   (setq pdf-view-continuous nil)
-   (evil-collection-init 'pdf)
-   (setq pdf-view-midnight-colors '("WhiteSmoke" . "gray16"))
-   :general
-   (general-define-key
-    :states '(motion normal)
-    :keymaps 'pdf-view-mode-map
-    ;; evil-style bindings
-    ;; "SPC"  nil ;TODO where to put this globally?
-    "-"  nil ;TODO where to put this globally?
-    "j"  '(pdf-view-scroll-up-or-next-page :which-key "scroll down")
-    "k"  '(pdf-view-scroll-down-or-previous-page :which-key "scroll up")
-    ;; "j"  '(pdf-view-next-line-or-next-page :which-key "scroll down")
-    ;; "k"  '(pdf-view-previous-line-or-previous-page :which-key "scroll up")
-    "L"  '(image-forward-hscroll :which-key "scroll right")
-    "H"  '(image-backward-hscroll :which-key "scroll left")
-    "l"  '(pdf-view-next-page :which-key "page down")
-    "h"  '(pdf-view-previous-page :which-key "page up")
-    "u"  '(pdf-view-scroll-down-or-previous-page :which-key "scroll down")
-    "d"  '(pdf-view-scroll-up-or-next-page :which-key "scroll up")
-    "/"  '(isearch-forward :which-key search forward)
-    "?"  '(isearch-backward :which-key search backward)
-    "0"  '(image-bol :which-key "go left")
-    "$"  '(image-eol :which-key "go right"))
-   (my-local-leader-def
-     ;; :states 'normal
+(unless (system-name= "localhost" "lina")
+  (use-package pdf-tools
+    :ensure t
+    :init
+    (pdf-tools-install)
+    :magic ("%PDF" . pdf-view-mode)
+    :config
+    (add-hook 'pdf-view-mode-hook 'pdf-view-midnight-minor-mode)
+    (setq pdf-view-continuous nil)
+    (evil-collection-init 'pdf)
+    (setq pdf-view-midnight-colors '("WhiteSmoke" . "gray16"))
+    :general
+    (general-define-key
+     :states '(motion normal)
      :keymaps 'pdf-view-mode-map
-     ;; Scale/Fit
-     ;; "f"  nil
-     "fw"  '(pdf-view-fit-width-to-window :which-key "fit width")
-     "fh"  '(pdf-view-fit-height-to-window :which-key "fit heigth")
-     "fp"  '(pdf-view-fit-page-to-window :which-key "fit page")
-     "m"  '(pdf-view-set-slice-using-mouse :which-key "slice using mouse")
-     "b"  '(pdf-view-set-slice-from-bounding-box :which-key "slice from bounding box")
-     "R"  '(pdf-view-reset-slice :which-key "reset slice")
-     "zr" '(pdf-view-scale-reset :which-key "zoom reset"))))
+     ;; evil-style bindings
+     ;; "SPC"  nil ;TODO where to put this globally?
+     "-"  nil ;TODO where to put this globally?
+     "j"  '(pdf-view-scroll-up-or-next-page :which-key "scroll down")
+     "k"  '(pdf-view-scroll-down-or-previous-page :which-key "scroll up")
+     ;; "j"  '(pdf-view-next-line-or-next-page :which-key "scroll down")
+     ;; "k"  '(pdf-view-previous-line-or-previous-page :which-key "scroll up")
+     "L"  '(image-forward-hscroll :which-key "scroll right")
+     "H"  '(image-backward-hscroll :which-key "scroll left")
+     "l"  '(pdf-view-next-page :which-key "page down")
+     "h"  '(pdf-view-previous-page :which-key "page up")
+     "u"  '(pdf-view-scroll-down-or-previous-page :which-key "scroll down")
+     "d"  '(pdf-view-scroll-up-or-next-page :which-key "scroll up")
+     "/"  '(isearch-forward :which-key search forward)
+     "?"  '(isearch-backward :which-key search backward)
+     "0"  '(image-bol :which-key "go left")
+     "$"  '(image-eol :which-key "go right"))
+    (my-local-leader-def
+      ;; :states 'normal
+      :keymaps 'pdf-view-mode-map
+      ;; Scale/Fit
+      ;; "f"  nil
+      "fw"  '(pdf-view-fit-width-to-window :which-key "fit width")
+      "fh"  '(pdf-view-fit-height-to-window :which-key "fit heigth")
+      "fp"  '(pdf-view-fit-page-to-window :which-key "fit page")
+      "m"  '(pdf-view-set-slice-using-mouse :which-key "slice using mouse")
+      "b"  '(pdf-view-set-slice-from-bounding-box :which-key "slice from bounding box")
+      "R"  '(pdf-view-reset-slice :which-key "reset slice")
+      "zr" '(pdf-view-scale-reset :which-key "zoom reset"))))
 
-;;exwm
-  ;; (use-package exwm 
-  ;;   :ensure t
-  ;;   :init
-  ;;   (server-start)
-  ;;   :config
-  ;;   (exwm-enable))
-
-  ;; (use-package exwm-config
-  ;;   :after exwm
-  ;;   :demand t
-  ;;   :config
-  ;;   (evil-set-initial-state 'exwm-mode 'emacs)
-  ;;   (display-time-mode)
-  ;;   (setq mouse-autoselect-window nil
-  ;; 	  focus-follows-mouse nil))
-
-  ;; (use-package exwm-input
-  ;;   :after exwm-randr
-  ;;   :demand t
-  ;;   :config
-  ;;   (define-key exwm-mode-map (kbd "C-c") nil)
-  ;;   (setq exwm-input-global-keys
-  ;; 	  `(([?\s-r] . exwm-reset)
-  ;; 	    ([?\s-e] . exwm-input-release-keyboard)
-  ;; 	    ([?\s-w] . exwm-workspace-switch)
-  ;; 	    ([?\s-W] . exwm-workspace-move-window)
-  ;; 	    ,@(mapcar (lambda (i)
-  ;; 			`(,(kbd (format "s-%d" i)) .
-  ;; 			  (lambda () (interactive)
-  ;; 			    (exwm-workspace-switch-create ,i))))
-  ;; 		      (number-sequence 0 9))
-  ;; 	    ;; ,@(mapcar (lambda (i)
-  ;; 	    ;; 	      `(,(kbd (format "s-%s" i)) .
-  ;; 	    ;; 		(lambda () (interactive)
-  ;; 	    ;; 		  (exwm-workspace-move-window ,i))))
-  ;; 	    ;; 	    (list '! \" § $ % & / ( ) =))
-  ;; 	    ;; (number-sequence 0 9))
-  ;; 	    ([?\s-d] . counsel-linux-app)
-  ;; 	    ([?\s-l] . evil-window-right)
-  ;; 	    ([?\s-h] . evil-window-left)
-  ;; 	    ([?\s-j] . evil-window-down)
-  ;; 	    ([?\s-k] . evil-window-up)
-  ;; 	    ([?\s-c] . kill-this-buffer)
-  ;; 	    ([?\s-o] . my-exwm-switch-to-other-workspace)
-  ;; 	    ([?\s-O] . my-exwm-move-window-to-other-workspace)
-  ;; 	    ([?\s-m] . delete-other-windows)
-  ;; 	    ([C-s-f1] . (lambda () (interactive) (eshell 'N)))
-  ;; 	    ([s-f1] . eshell)
-  ;; 	    ([s-f2] . (lambda () (interactive)
-  ;; 			(start-process "" nil "qutebrowser")))
-  ;; 	    ([s-f3] . deer)
-  ;; 	    ([s-f4] . (lambda () (interactive)
-  ;; 			(mu4e)))
-  ;; 	    ([s-f12] . (lambda () (interactive)
-  ;; 			 (start-process "" nil "/usr/bin/slock")))))
-  ;;   (push ?\s-\  exwm-input-prefix-keys)
-  ;;   ;; (push ?\M-m  exwm-input-prefix-keys)
-  ;;   (exwm-input-set-key (kbd "<XF86AudioLowerVolume>")
-  ;; 			(lambda () (interactive) (start-process-shell-command "" nil "pactl set-sink-volume @DEFAULT_SINK@ -5%")))
-  ;;   (exwm-input-set-key (kbd "<XF86AudioRaiseVolume>")
-  ;; 			(lambda () (interactive) (start-process-shell-command "" nil "pactl set-sink-volume @DEFAULT_SINK@ +5%")))
-  ;;   (exwm-input-set-key (kbd "<XF86AudioMute>")
-  ;; 			(lambda () (interactive) (start-process-shell-command "" nil "pactl set-sink-mute @DEFAULT_SINK@ toggle"))))
-
-  ;; (use-package exwm-systemtray
-  ;;   :after exwm
-  ;;   :demand t
-  ;;   :config (exwm-systemtray-enable))
-
-  ;; (use-package exwm-randr
-  ;;   :after exwm
-  ;;   :demand t
-  ;;   :preface
-  ;;   (defun my-exwm-get-other-workspace ()
-  ;;     (cond ((not (= 2 (length (seq-filter #'identity (mapcar #'exwm-workspace--active-p exwm-workspace--list))))) nil) ;currently only works for two monitors
-  ;; 	    ((= exwm-workspace-current-index
-  ;; 		(cl-position t (mapcar #'exwm-workspace--active-p exwm-workspace--list) :from-end t))
-  ;; 	     (cl-position t (mapcar #'exwm-workspace--active-p exwm-workspace--list) :from-end nil))
-  ;; 	    ((= exwm-workspace-current-index
-  ;; 		(cl-position t (mapcar #'exwm-workspace--active-p exwm-workspace--list) :from-end nil))
-  ;; 	     (cl-position t (mapcar #'exwm-workspace--active-p exwm-workspace--list) :from-end t))))
-  ;;   (defun my-exwm-switch-to-other-workspace () (interactive)
-  ;; 	   (exwm-workspace-switch (my-exwm-get-other-workspace)))
-  ;;   (defun my-exwm-move-window-to-other-workspace () (interactive)
-  ;; 	   (exwm-workspace-move-window (my-exwm-get-other-workspace)))
-  ;;   (cond
-  ;;    ((system-name= "klingenbergTablet") (progn (set 'monitor1 "eDP1")
-  ;; 						(set 'monitor2 "HDMI2")
-  ;; 						(set 'placement "below")))
-  ;;    ((system-name= "klingenbergLaptop") (progn (set 'monitor1 "LVDS1")
-  ;; 						(set 'monitor2 "VGA1")
-  ;; 						(set 'placement "below")))
-  ;;    (t (progn (set 'monitor1 "VGA-1")
-  ;; 	       (set 'monitor2 "HDMI-1")
-  ;; 	       (set 'placement "left-of"))))
-  ;;   (defun my/exwm-xrandr ()
-  ;;     "Configure screen with xrandr."
-  ;;     (shell-command
-  ;;      (if (file-exists-p "~/.screenlayout/default.sh")
-  ;; 	   "~/.screenlayout/default.sh" ; prefer saved command by arandr by default
-  ;; 	 (concat "xrandr --output "
-  ;; 		 monitor1
-  ;; 		 " --primary --auto --"
-  ;; 		 placement
-  ;; 		 " "
-  ;; 		 monitor2
-  ;; 		 " --auto"))))
-  ;;   :hook (exwm-randr-screen-change . my/exwm-xrandr)
-  ;;   :init
-  ;;   (setq exwm-randr-workspace-monitor-plist (list 0 monitor1
-  ;; 						   2 monitor1
-  ;; 						   4 monitor1
-  ;; 						   6 monitor1
-  ;; 						   8 monitor1
-  ;; 						   1 monitor2
-  ;; 						   3 monitor2
-  ;; 						   5 monitor2
-  ;; 						   7 monitor2
-  ;; 						   9 monitor2))
-  ;;   :config
-  ;;   (progn
-  ;;     (exwm-randr-enable)))
-
-  ;; (use-package exwm-workspace
-  ;;   :after exwm
-  ;;   :demand t
-  ;;   :init
-  ;;   (progn
-  ;;     (setq exwm-workspace-number 10)
-  ;;     (setq exwm-workspace-show-all-buffers t)
-  ;;     (setq exwm-layout-show-all-buffers t)))
 ;;;programming languages
 ;; lisp
+(use-package lispy
+  :ensure t)
 
-;; (use-package sly
-;;   :ensure t
-;;   :config
-;;   (add-hook 'sly-db-mode 'evil-insert-state) ;TODO
-;;   (setq inferior-lisp-program "/usr/bin/sbcl --load /home/klingenberg/quicklisp.lisp")
-;;   :general (my-local-leader-def
-;; 	     :keymaps 'lisp-mode-map
-;; 	     "'" '(sly :which-key "start reps")
-;; 	     "e" '(:ignore :which-key "eval")
-;; 	     "ef" '(sly-eval-defun :which-key "eval function")
-;; 	     "ee" '(sly-eval-last-expression :which-key "eval last expression")
-;; 	     "eb" '(sly-eval-buffer :which-key "eval buffer")))
+(use-package sly
+  :ensure t
+  :config
+  (lispy-mode 1)
+  (setq inferior-lisp-program "/usr/bin/sbcl --load /home/klingenberg/quicklisp.lisp")
+  :general (my-local-leader-def
+	     :keymaps 'lisp-mode-map
+	     "'" '(sly :which-key "start reps")
+	     "e" '(:ignore :which-key "eval")
+	     "ef" '(sly-eval-defun :which-key "eval function")
+	     "ee" '(sly-eval-last-expression :which-key "eval last expression")
+	     "eb" '(sly-eval-buffer :which-key "eval buffer")))
 
-;; (use-package sly-quicklisp
-;;   :ensure t)
-
-;; (use-package geiser
-;;   :ensure t
-;;   :general (my-local-leader-def
-;; 	     :keymaps 'scheme-mode-map
-;; 	     "'" '(geiser :which-key "start reps")
-;; 	     "e" '(:ignore :which-key "eval")
-;; 	     "ef" '(geiser-eval-definition :which-key "eval definition")
-;; 	     "ee" '(geiser-eval-last-sexp :which-key "eval last expression")
-;; 	     "eb" '(geiser-eval-buffer :which-key "eval buffer")))
+(use-package geiser
+  :ensure t
+  :config
+  (when (system-name= "klingenberg-tablet")
+   (with-eval-after-load 'geiser-guile
+     (add-to-list 'geiser-guile-load-path "~/guix-packages/guix/"))
+   (with-eval-after-load 'yasnippet
+     (add-to-list 'yas-snippet-dirs "~/guix-packages/guix/etc/snippets")))
+  :general (my-local-leader-def
+	     :keymaps 'scheme-mode-map
+	     "'" '(geiser :which-key "start reps")
+	     "e" '(:ignore :which-key "eval")
+	     "ef" '(geiser-eval-definition :which-key "eval definition")
+	     "ee" '(geiser-eval-last-sexp :which-key "eval last expression")
+	     "eb" '(geiser-eval-buffer :which-key "eval buffer")))
 
 (use-package eval-sexp-fu
   :ensure t
@@ -747,8 +726,47 @@
   :ensure t
   :init (rainbow-delimiters-mode t))
 
-;; html
-(use-package web-mode
+(use-package dmenu
   :ensure t)
 
-(require 'washing-machine-timer "~/Dropbox/Helen+Dario/washing-machine-timer.el")
+(use-package google-translate
+  :ensure t)
+
+(use-package excorporate
+  :ensure t
+  :config
+  (general-define-key
+   :keymaps 'calendar-mode-map
+   :states 'normal
+   "e" '((lambda ()
+	   (interactive)
+	    (exco-calendar-show-day)
+	    (switch-to-buffer "diary-excorporate-transient"))
+	 :which-key "excorporate show day"))
+  (setq excorporate-configuration (cons "klingenberg@fdy.tu-darmstadt.de" "https://mail.tu-darmstadt.de/ews/exchange.asmx")))
+
+(use-package emms
+  :ensure t)
+
+(use-package sx
+  :ensure t
+  :config
+  (general-define-key
+   :keymaps 'sx-question-list-mode-map
+   :states 'normal
+   "RET" 'sx-display))
+
+(use-package md4rd
+  :ensure t
+  :config
+  (mapc
+   (lambda (elem) (add-to-list 'md4rd-subs-active elem))
+   '(linux
+     baduk)))
+
+(use-package podcaster
+  :ensure t
+  :config
+  (add-to-list 'podcaster-feeds-urls "https://www.zeitsprung.fm/podcasts/zs49"))
+
+(show-paren-mode 1)
