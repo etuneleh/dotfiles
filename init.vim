@@ -53,3 +53,4 @@ call vimtex#imaps#add_map({
 set number
 set cursorline
 set tw=80
+set autochdir

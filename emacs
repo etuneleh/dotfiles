@@ -14,7 +14,7 @@
  '(org-agenda-files (quote ("~/Documents/TODO.org")))
  '(package-selected-packages
    (quote
-    (jenkins butler pulseaudio-control pinentry bosss emacs-bosss projectile-ripgrep dmenu projectile helm-firefox helm-company helm-unicode helm-tramp helm-ext helm-dictionary helm-eww helm-mu helm-exwm podcaster lispy helm-system-packages mu4e-conversation excorporate md4rd sx emms yasnippet-snippets google-translate fsharp-mode wgrep guix pdf-tools magit yasnippet company ivy mu4e-alert evil-mu4e smooth-scrolling doom-themes ggtags zenburn-theme which-key use-package smart-mode-line-atom-one-dark-theme sly ranger rainbow-delimiters ox-reveal org-ref org-re-reveal org-plus-contrib org-bullets omnisharp general geiser exwm evil-surround evil-snipe evil-org evil-magit evil-commentary evil-collection eval-sexp-fu eshell-prompt-extras counsel company-reftex auctex ace-link)))
+    (cider clojure-mode web-mode helm elfeed jenkins butler pulseaudio-control pinentry bosss emacs-bosss projectile-ripgrep dmenu projectile helm-firefox helm-company helm-unicode helm-tramp helm-ext helm-dictionary helm-eww helm-mu helm-exwm podcaster lispy helm-system-packages mu4e-conversation excorporate md4rd sx emms yasnippet-snippets google-translate fsharp-mode wgrep guix pdf-tools magit yasnippet company ivy mu4e-alert evil-mu4e smooth-scrolling doom-themes ggtags zenburn-theme which-key use-package smart-mode-line-atom-one-dark-theme sly ranger rainbow-delimiters ox-reveal org-ref org-re-reveal org-plus-contrib org-bullets omnisharp general geiser exwm evil-surround evil-snipe evil-org evil-magit evil-commentary evil-collection eval-sexp-fu eshell-prompt-extras counsel company-reftex auctex ace-link)))
  '(scroll-bar-mode nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -523,6 +523,12 @@ It only works for frames with exactly two windows.
 	     "ee" '(geiser-eval-last-sexp :which-key "eval last expression")
 	     "eb" '(geiser-eval-buffer :which-key "eval buffer")))
 
+;; (use-package clojure-mode
+;;   :ensure t)
+
+(use-package cider
+  :ensure t)
+
 (use-package eval-sexp-fu
   :ensure t
   :config
@@ -729,5 +735,22 @@ It only works for frames with exactly two windows.
 ;; html
 (use-package web-mode
   :ensure t)
+
+(use-package emms
+  :ensure t
+  :config
+  (emms-standard)
+  (emms-default-players))
+
+(use-package elfeed
+  :ensure t
+  :config
+  (setq elfeed-feeds
+        '("https://www.zeitsprung.fm/feed/mp3/")))
+
+;; (use-package podcaster
+;;   :ensure t
+;;   :config
+;;   (add-to-list 'podcaster-feeds-urls "https://www.zeitsprung.fm/feed/mp3/"))
 
 (require 'washing-machine-timer "~/Dropbox/Helen+Dario/washing-machine-timer.el")
